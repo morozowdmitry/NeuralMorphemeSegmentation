@@ -12,11 +12,11 @@ import json
 import keras.layers as kl
 import keras.backend as kb
 from keras.models import Model
-from keras.optimizers import adam
+from keras.optimizers import Adam
 from keras.callbacks import ModelCheckpoint, EarlyStopping
 
-from read import extract_morpheme_type, read_BMES, read_splitted
-from tabled_trie import make_trie
+from .read import extract_morpheme_type, read_BMES, read_splitted
+from .tabled_trie import make_trie
 
 
 def read_config(infile):
@@ -560,7 +560,7 @@ class Partitioner:
         output = kl.TimeDistributed(
             kl.Dense(self.target_symbols_number_, activation="softmax"), name="output")(pre_last_output)
         model = Model(inputs, [output])
-        model.compile(optimizer=adam(clipnorm=5.0),
+        model.compile(optimizer=Adam(clipnorm=5.0),
                       loss="categorical_crossentropy", metrics=["accuracy"])
         return model
 
