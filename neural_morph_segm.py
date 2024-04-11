@@ -111,8 +111,8 @@ def load_cls(infile):
     return inflector
 
 
-MORPHEME_TYPES = ["PREF", "ROOT", "LINK", "END", "POSTFIX", "HYPH"]
-PREF, ROOT, LINK, SUFF, ENDING, POSTFIX, HYPH, FINAL = 0, 1, 2, 3, 4, 5, 6, 7
+MORPHEME_TYPES = ["PREF", "ROOT", "LINK", "END", "POST", "HYPN"]
+PREF, ROOT, LINK, SUFF, ENDING, POST, HYPN, FINAL = 0, 1, 2, 3, 4, 5, 6, 7
 
 
 def get_next_morpheme_types(morpheme_type):
@@ -121,8 +121,8 @@ def get_next_morpheme_types(morpheme_type):
     """
     if morpheme_type == "None":
         return ["None"]
-    MORPHEMES = ["SUFF", "END", "LINK", "POSTFIX", "PREF", "ROOT"]
-    if morpheme_type in ["ROOT", "SUFF", "HYPH"]:
+    MORPHEMES = ["SUFF", "END", "LINK", "POST", "PREF", "ROOT"]
+    if morpheme_type in ["ROOT", "SUFF", "HYPN"]:
         start = 0
     elif morpheme_type == "END":
         start = 2
@@ -131,8 +131,8 @@ def get_next_morpheme_types(morpheme_type):
     else:
         start = 6
     answer = MORPHEMES[start:6]
-    if len(answer) > 0 and morpheme_type != "HYPH":
-        answer.append("HYPH")
+    if len(answer) > 0 and morpheme_type != "HYPN":
+        answer.append("HYPN")
     if morpheme_type == "BEGIN":
         answer.append("None")
     return answer
@@ -166,7 +166,7 @@ def is_correct_morpheme_sequence(morphemes):
     if morpheme_label not in "BS" or morpheme_type not in ["PREF", "ROOT", "None"]:
         return False
     morpheme_label, morpheme_type = morphemes[-1].split("-")
-    if morpheme_label not in "ES" or morpheme_type not in ["ROOT", "SUFF", "ENDING", "POSTFIX", "None"]:
+    if morpheme_label not in "ES" or morpheme_type not in ["ROOT", "SUFF", "ENDING", "POST", "None"]:
         return False
     for i, morpheme in enumerate(morphemes[:-1]):
         if morphemes[i+1] not in get_next_morpheme(morpheme):
@@ -221,7 +221,7 @@ class Partitioner:
     """
 
     LEFT_MORPHEME_TYPES = ["pref", "root"]
-    RIGHT_MORPHEME_TYPES = ["root", "suff", "end", "postfix"]
+    RIGHT_MORPHEME_TYPES = ["root", "suff", "end", "post"]
 
     def __init__(self, models_number=1, use_morpheme_types=True,
                  to_memorize_morphemes=False, min_morpheme_count=2,
@@ -308,7 +308,7 @@ class Partitioner:
             json.dump(info, fout)
 
     # property --- функция, прикидывающаяся переменной; декоратор метода (превращает метод класса в атрибут класса)
-    @property 
+    @property
     def symbols_number_(self):
         return len(self.symbols_)
 
@@ -392,9 +392,9 @@ class Partitioner:
                     curr_answer[1,0] = max(score, curr_answer[1,0])
                     curr_answer[end, 5] = max(score, curr_answer[end, 5])
             root_starts += prefixes
-            postfix_lengths = self.right_morphemes_["postfix"].descend_by_prefixes(word[:0:-1])
+            postfix_lengths = self.right_morphemes_["post"].descend_by_prefixes(word[:0:-1])
             for k in postfix_lengths:
-                score = self._get_ngram_score(word[-k:], "postfix")
+                score = self._get_ngram_score(word[-k:], "post")
                 if k == 1:
                     curr_answer[m, 14] = max(score, curr_answer[m, 14])
                 else:
@@ -670,7 +670,7 @@ class Partitioner:
         for key, curr_counts in counts.items():
             curr_relative_counts = dict()
             curr_ngram_counts = (prefix_counts if key == "pref" else
-                                 suffix_counts if key in ["end", "postfix"] else ngram_counts)
+                                 suffix_counts if key in ["end", "post"] else ngram_counts)
             for ngram, count in curr_counts.items():
                 if count < self.min_morpheme_count or ngram not in curr_ngram_counts:
                     continue
@@ -738,8 +738,8 @@ class Partitioner:
         """
         morphemes, curr_morpheme, morpheme_types = [], "", []
         if self.use_morpheme_types:
-            end_labels = ['E-ROOT', 'E-PREF', 'E-SUFF', 'E-END', 'E-POSTFIX', 'S-ROOT',
-                          'S-PREF', 'S-SUFF', 'S-END', 'S-LINK', 'S-HYPH']
+            end_labels = ['E-ROOT', 'E-PREF', 'E-SUFF', 'E-END', 'E-POST', 'S-ROOT',
+                          'S-PREF', 'S-SUFF', 'S-END', 'S-LINK', 'S-HYPN']
         else:
             end_labels = ['E-None', 'S-None']
         for letter, label in zip(word, labels):
@@ -812,7 +812,7 @@ class Partitioner:
                 states.append(prev_states)
             # последнее состояние --- обязательно конец морфемы
             possible_states = [self.target_symbol_codes_["{}-{}".format(x, y)]
-                               for x in "ES" for y in ["ROOT", "SUFF", "END", "POSTFIX", "None"]
+                               for x in "ES" for y in ["ROOT", "SUFF", "END", "POST", "None"]
                                if "{}-{}".format(x, y) in self.target_symbol_codes_]
             best_states = [min(possible_states, key=(lambda x: costs[-1][x]))]
             for j in range(length, 0, -1):
